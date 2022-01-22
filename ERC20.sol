@@ -2,9 +2,11 @@
 pragma solidity ^0.8.7;
 import "./IERC20.sol";
 import "./libraries/Safemath.sol";
+import "./libraries/Address.sol";
 
 contract MyToken is IERC20 {
     using SafeMath for uint256;
+    using Address for address;
 
     // Mapping hold balances against EOA.
     mapping(address => uint256) private _balances;
@@ -48,6 +50,10 @@ contract MyToken is IERC20 {
     receive() external payable {
         address sender = msg.sender;
         require(msg.sender != address(0), "Address Cant be zero address");
+        require(
+            !Address.isContract(sender),
+            "Can't give tokens to contract address"
+        );
 
         uint256 tokenToTransfer = msg.value * priceOfToken;
         require(
