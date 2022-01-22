@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 import "./IERC20.sol";
-import "./Safemath.sol";
+import "./libraries/Safemath.sol";
 
 contract MyToken is IERC20 {
     using SafeMath for uint256;
