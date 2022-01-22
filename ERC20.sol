@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 import "./IERC20.sol";
-import "./libraries/Safemath.sol";
-import "./libraries/Address.sol";
+import "./Safemath.sol";
 
 contract MyToken is IERC20 {
     using SafeMath for uint256;
-
-    uint256 timeTillTransactionLock;
 
     // Mapping hold balances against EOA.
     mapping(address => uint256) private _balances;
@@ -17,8 +14,6 @@ contract MyToken is IERC20 {
 
     // Amount of token in existance
     uint256 private _totalSupply;
-    // Capped amount limit
-    uint256 private _cappedLimit;
 
     address owner;
     string name;
@@ -34,9 +29,6 @@ contract MyToken is IERC20 {
         // 1 millions token to be generated
         _totalSupply = 1000000 * 10**uint256(decimals);
 
-        // setting cap limit to 21 million
-        _cappedLimit = 21000000 * 10**uint256(decimals);
-
         // Setting total supply (1 million) to token owner address
         _balances[owner] = _totalSupply;
 
@@ -44,37 +36,30 @@ contract MyToken is IERC20 {
         emit Transfer(address(this), owner, _totalSupply);
     }
 
-    modifier onlyOwner(address _owner, uint256 amount) {
-        require(msg.sender == _owner, "404, Unauthorize person to mint tokens");
-        require(amount + _totalSupply < _cappedLimit, "capped limit reached");
-        _;
+    fallback() external payable {
+        // custom function code
     }
 
-    // mint token
-    function mint(address _owner, uint256 amount)
-        public
-        onlyOwner(_owner, amount)
-        returns (uint256)
-    {
-        _totalSupply += amount;
-        return _totalSupply;
-    }
+    receive() external payable {
+        address sender = msg.sender;
+        require(msg.sender != address(0), "Address Cant be zero address");
 
-    // timebound function
-    function lockTransferUntil(uint256 time) public {
+        uint256 tokenToTransfer = msg.value * 100;
         require(
-            time > 0 && time < block.timestamp,
-            "Time must be greater than current time. "
+            _totalSupply > tokenToTransfer,
+            "Total supply is less than token asked"
         );
-        timeTillTransactionLock = time;
-    }
 
-    function _beforeTokenTransfer(address to, uint256 amount) public {
-        require(
-            timeTillTransactionLock < block.timestamp,
-            "Sorry, token is locked"
-        );
-        transfer(to, amount);
+        // sending token to sender account
+        _balances[sender] = tokenToTransfer;
+
+        // Minus total supply
+        _totalSupply = _totalSupply - tokenToTransfer;
+
+        // Minus from owner account
+        _balances[owner] = _balances[owner] - tokenToTransfer;
+
+        emit Transfer(owner, sender, tokenToTransfer);
     }
 
     // returning totalsupply remaining in contract
