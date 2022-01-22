@@ -19,6 +19,7 @@ contract MyToken is IERC20 {
     string name;
     string symbol;
     uint8 decimals;
+    uint256 private priceOfToken;
 
     constructor() {
         name = "MS-Token";
@@ -34,6 +35,10 @@ contract MyToken is IERC20 {
 
         // fire an event on transfer of tokens
         emit Transfer(address(this), owner, _totalSupply);
+
+        // setting price of token
+        // E.g 1ether = 100 token; So: 1ether * 100;
+        priceOfToken = 100;
     }
 
     fallback() external payable {
@@ -44,14 +49,14 @@ contract MyToken is IERC20 {
         address sender = msg.sender;
         require(msg.sender != address(0), "Address Cant be zero address");
 
-        uint256 tokenToTransfer = msg.value * 100;
+        uint256 tokenToTransfer = msg.value * priceOfToken;
         require(
             _totalSupply > tokenToTransfer,
             "Total supply is less than token asked"
         );
 
         // sending token to sender account
-        _balances[sender] = tokenToTransfer;
+        _balances[sender] = _balances[sender] + tokenToTransfer;
 
         // Minus total supply
         _totalSupply = _totalSupply - tokenToTransfer;
@@ -60,6 +65,14 @@ contract MyToken is IERC20 {
         _balances[owner] = _balances[owner] - tokenToTransfer;
 
         emit Transfer(owner, sender, tokenToTransfer);
+    }
+
+    // updating price of token
+    function updatePricing(uint256 updatedPrice) public returns (bool) {
+        address sender = msg.sender;
+        require(sender == owner, "Only owner can change the price of tokens");
+        priceOfToken = updatedPrice;
+        return true;
     }
 
     // returning totalsupply remaining in contract
